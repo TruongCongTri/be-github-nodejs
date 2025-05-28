@@ -12,6 +12,7 @@ const folders = [
   "src/services",
   "src/utils",
   "src/config",
+  "src/tests",
 ];
 
 // create folders
