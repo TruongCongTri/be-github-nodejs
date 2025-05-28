@@ -1,20 +1,21 @@
-import express from 'express';
-    import cors from 'cors';
-    import dotenv from 'dotenv';
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+dotenv.config();
+const app = express();
 
-    dotenv.config();
+import authRoutes from "./routes/auth.js";
 
-    const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-    app.use(cors());
-    app.use(express.json());
+app.get("/", (req, res) => {
+  res.send("Hello from ESModule Express!");
+});
+app.use("/api/auth", authRoutes);
 
-    app.get('/', (req, res) => {
-        res.send('Hello from ESModule Express!');
-    });
-
-    const PORT = process.env.HTTP_PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`🚀 Server is running on http://localhost:${PORT}`);
-    });
-    
+const PORT = process.env.HTTP_PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+});
