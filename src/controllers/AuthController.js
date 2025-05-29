@@ -10,12 +10,15 @@ import { EXPIRED_TIME } from "../constant/enum.js";
 /**
  * Create a new 6-digit access code, send it via SMS, and store it in Firebase.
  *
+ * @async
+ * @function createAccessCodeController
+ *
  * @param {Object} req - Express request object
  * @param {Object} req.body - Request body
  * @param {string} req.body.phone_number - The user's phone number in international format
  * @param {Object} res - Express response object
  *
- * @returns {Object} JSON response indicating success or failure
+ * @returns {Promise<Object>} JSON response indicating success or failure
  */
 export const createAccessCodeController = async (req, res) => {
   const { phone_number } = req.body;
@@ -45,14 +48,14 @@ export const createAccessCodeController = async (req, res) => {
 
     return successResponse({
       res,
-      status: 200,
+      statusCode: 200,
       message: `Access code sent to ${phone_number}`,
     });
   } catch (error) {
     console.error(`❌ Send Access code error:`, error.message);
     return errorResponse({
       res,
-      status: 500,
+      statusCode: 500,
       message: `Send Access code error`,
       error: error.message,
     });
@@ -62,13 +65,16 @@ export const createAccessCodeController = async (req, res) => {
 /**
  * Validate a submitted access code. Clear it if it matches.
  *
+ * @async
+ * @function validateAccessCodeController
+ *
  * @param {Object} req - Express request object
  * @param {Object} req.body - Request body
  * @param {string} req.body.phone_number - The user's phone number in international format
  * @param {string} req.body.access_code - The access code to be validated
  * @param {Object} res - Express response object
  *
- * @returns {Object} JSON response indicating validation result
+ * @returns {Promise<Object>} JSON response indicating validation result
  */
 export const validateAccessCodeController = async (req, res) => {
   const { phone_number, access_code } = req.body;
@@ -79,7 +85,7 @@ export const validateAccessCodeController = async (req, res) => {
     if (!userDoc.exists) {
       return errorResponse({
         res,
-        status: 404,
+        statusCode: 404,
         message: "Phone number not found",
       });
     }
@@ -89,7 +95,7 @@ export const validateAccessCodeController = async (req, res) => {
     if (userData.accessCode !== access_code) {
       return errorResponse({
         res,
-        status: 401,
+        statusCode: 401,
         message: "Invalid access code",
       });
     }
@@ -97,7 +103,7 @@ export const validateAccessCodeController = async (req, res) => {
     if (Date.now() > userData.expiresAt) {
       return errorResponse({
         res,
-        status: 401,
+        statusCode: 401,
         message: "Access code expired",
       });
     }
@@ -107,12 +113,12 @@ export const validateAccessCodeController = async (req, res) => {
       .doc(phone_number)
       .update({ accessCode: "", expiresAt: "" });
 
-    return successResponse({ res, status: 200, message: "Code validated" });
+    return successResponse({ res, statusCode: 200, message: "Code validated" });
   } catch (error) {
     console.error(`❌ Validation error:`, error.message);
     return errorResponse({
       res,
-      status: 500,
+      statusCode: 500,
       message: `Validation error`,
       error: error.message,
     });

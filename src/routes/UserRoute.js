@@ -1,3 +1,8 @@
+/**
+ * @file Defines user-related routes for liking GitHub profiles and retrieving user profiles.
+ * Prefix: /api/user
+ */
+
 import express from "express";
 
 import { validateSchema } from "../middlewares/validateSchema.js";
@@ -12,12 +17,22 @@ import {
 
 const router = express.Router();
 
+/**
+ * @route GET /api/user/profile?phone_number
+ * @desc Retrieve user profile and liked GitHub profiles
+ * @access Public
+ */
 router.get(
-  "/get-user-profile",
+  "/profile",
   validateSchema(getUserProfileSchema, "query"),
   getUserProfileController
 );
 
+/**
+ * @route POST /api/user/like-github-user
+ * @desc Save a liked GitHub profile for the user
+ * @access Public
+ */
 router.post(
   "/like-github-user",
   validateSchema(likeGitHubUserSchema),

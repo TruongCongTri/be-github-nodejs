@@ -5,6 +5,7 @@ dotenv.config();
 /**
  * Send SMS using ESMS.vn provider
  *
+ * @function sendSMS
  * @param {string} to - Recipient phone number in international format (e.g., 84123456789)
  * @param {string} message - SMS content to be sent
  *
