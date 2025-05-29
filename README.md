@@ -2,6 +2,14 @@
 
 This is a backend system built with **Node.js + Express** using **Firebase** for data storage and **ESMS.vn** for SMS delivery. It provides OTP (One-Time Password) functionality via phone numbers, GitHub user search with pagination, and GitHub user profile liking.
 
+## 🌐 Live API Server
+
+If you're working on the frontend and want to connect to a live backend, use the following base URL:
+
+```
+https://backend-test-78ay.onrender.com
+```
+
 ## 🗂 Project Structure
 
 ```
