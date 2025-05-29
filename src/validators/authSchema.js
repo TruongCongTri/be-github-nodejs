@@ -18,5 +18,5 @@ export const validateCodeSchema = yup.object({
       "Phone number must be in international format"
     )
     .required(),
-  accessCode: yup.string().length(6).required(),
+  access_code: yup.string().length(6).required(),
 });

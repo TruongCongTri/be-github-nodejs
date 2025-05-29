@@ -11,28 +11,36 @@ import { errorResponse } from "../helpers/responses/response.js";
  * app.post('/example', validateSchema(exampleSchema), controllerFunction);
  */
 export const validateSchema = (schema, target = "body") => {
-  // target = 'body', 'query', or 'params'
   return async (req, res, next) => {
     try {
-      const data = req[target];
-      const validated = await schema.validate(data, {
+      console.log(req[target]);
+      const validated = await schema.validate(req[target], {
         abortEarly: false,
         stripUnknown: true,
       });
-      req[target] = validated;
+
+      Object.defineProperty(req, target, {
+        value: validated,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
+
       next();
     } catch (error) {
       if (error.name === "ValidationError") {
         return errorResponse({
           res,
           status: 400,
-          success: false,
-          message: "Validation failed",
-          error: error.errors[0],
+          message: error.errors[0],
         });
       }
-
-      next(error);
+      console.log(`❌ Error validating request ${target}: `, error);
+      return errorResponse({
+        res,
+        status: 500,
+        message: `Internal Server Error while validating request ${target}.`,
+      });
     }
   };
 };

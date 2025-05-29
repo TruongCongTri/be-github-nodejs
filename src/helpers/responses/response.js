@@ -1,26 +1,25 @@
-export function successResponse({ res, status, success, data, message }) {
+export function successResponse({ res, status, data, message }) {
   if (data) {
     return res.status(status).json({
       data: { data },
       meta: {
-        success,
+        success: true,
         message,
       },
     });
   }
   return res.status(status).json({
     meta: {
-      success,
-      status,
+      success: true,
       message,
     },
   });
 }
 
-export function errorResponse({ res, status, success, message, error }) {
+export function errorResponse({ res, status, message, error }) {
   return res.status(status).json({
     meta: {
-      success,
+      success: false,
       message,
       error,
     },

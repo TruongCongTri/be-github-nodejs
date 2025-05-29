@@ -2,10 +2,21 @@ import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
+/**
+ * Send SMS using ESMS.vn provider
+ *
+ * @param {string} to - Recipient phone number in international format (e.g., 84123456789)
+ * @param {string} message - SMS content to be sent
+ *
+ * @returns {Promise<Object>} ESMS API response if success
+ *
+ * @throws {Error} Throws if request fails or ESMS returns error code
+ */
 export const sendSMS = async (to, message) => {
   try {
-    if (!to || !message) throw new Error("Phone number or message missing");
+    if (!to) throw new Error("Phone number missing");
 
+    if (!message) throw new Error("Message missing");
     const payload = {
       ApiKey: process.env.ESMS_API_KEY,
       Content: message,
