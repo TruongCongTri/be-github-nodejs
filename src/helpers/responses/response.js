@@ -9,7 +9,7 @@
  * @param {string} [options.message='Success'] - Message to return in meta
  * @param {Object|null} [options.pagination=null] - Pagination object (current_page, per_page, total, total_pages)
  * @param {string|null} [options.key=null] - Key to wrap data in (e.g., "user", "users")
- * 
+ *
  * @returns {Object} JSON response with meta and optional data block
  */
 export const successResponse = ({
@@ -23,18 +23,14 @@ export const successResponse = ({
   const isEmpty =
     payload == null ||
     (typeof payload === "object" && Object.keys(payload).length === 0);
-  const response = {
-    meta: {
-      success: true,
-      message,
-    },
-  };
 
+  const response = {};
+
+  // add data if no empty
   if (!isEmpty) {
     const isArray = Array.isArray(payload);
     let dataWrapper;
 
-    //
     if (isArray) {
       dataWrapper = {};
       dataWrapper = { [key || "items"]: payload };
@@ -53,6 +49,13 @@ export const successResponse = ({
 
     response.data = dataWrapper;
   }
+  // add metadata
+  response.meta = {
+    success: true,
+    message,
+  };
+
+  // add pagination to metadata
   if (pagination) {
     response.meta.pagination = pagination;
   }
@@ -67,7 +70,7 @@ export const successResponse = ({
  * @param {Object} res - Express response object
  * @param {string} message - Error message
  * @param {number} [statusCode=500] - HTTP status code
- * 
+ *
  * @returns {Object} JSON response with error message and success: false
  */
 export const errorResponse = ({
