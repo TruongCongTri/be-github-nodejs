@@ -12,7 +12,7 @@ export const extractGithubData = (githubResponse, currentPage, perPage) => {
   const totalPages = Math.ceil(total / perPage);
 
   return {
-    users: githubResponse.items || [],
+    users: githubResponse || [],
     pagination: {
       current_page: currentPage,
       per_page: perPage,

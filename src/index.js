@@ -19,7 +19,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/github", githubRouter);
 app.use("/api/user", userRouter);
 
-const PORT = process.env.HTTP_PORT || 3000;
+const PORT = (process.env.LOCAL_PORT || 3000);
 app.listen(PORT, () => {
   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });

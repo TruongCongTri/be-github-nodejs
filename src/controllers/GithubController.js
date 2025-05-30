@@ -10,7 +10,7 @@ import axios from "axios";
  *
  * @async
  * @function searchGithubUserController
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} req.query - Query parameters
  * @param {string} req.query.q - Search keyword
@@ -24,14 +24,40 @@ export const searchGithubUserController = async (req, res) => {
   const { q, page, per_page } = req.query;
 
   try {
-    const { data } = await axios.get(
+    const searchRes = await axios.get(
       process.env.NEXT_PUBLIC_GITHUB_SEARCH_USER,
       {
         params: { q, page, per_page },
+        headers: {
+          Authorization: `token ${process.env.GITHUB_TOKEN}`, // use token to avoid rate limit
+        },
       }
     );
+
+    const items = searchRes.data.items;
+    const enriched = await Promise.all(
+      items.map(async (user) => {
+        try {
+          const { data } = await axios.get(
+            `${process.env.NEXT_PUBLIC_GITHUB_USERS}/${user.login}`,
+            {
+              headers: {
+                Authorization: `token ${process.env.GITHUB_TOKEN}`,
+              },
+            }
+          );
+
+          return data;
+        } catch (err) {
+          console.error(`❌ Failed to fetch details for ${user.login}`);
+          return null;
+        }
+      })
+    );
+    console.log(enriched);
+
     const { users, pagination } = extractGithubData(
-      data,
+      enriched,
       Number(page),
       Number(per_page)
     );
@@ -59,7 +85,7 @@ export const searchGithubUserController = async (req, res) => {
  *
  * @async
  * @function findGitHubUserProfileController
- * 
+ *
  * @param {Object} req - Express request object
  * @param {Object} req.query - Query parameters
  * @param {number} req.query.github_user_id - GitHub user ID
