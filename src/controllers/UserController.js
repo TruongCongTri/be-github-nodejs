@@ -75,10 +75,15 @@ export const getUserProfileController = async (req, res) => {
     const userProfiles = await Promise.all(
       favorite_github_users.map(async (id) =>
         axios
-          .get(`${process.env.NEXT_PUBLIC_GITHUB_USER}/${id}`)
+          .get(`${process.env.NEXT_PUBLIC_GITHUB_USER}/${id}`, {
+            headers: {
+              Authorization: `token ${process.env.GITHUB_TOKEN}`, // use token to avoid rate limit
+            },
+          })
           .then((result) => result.data)
       )
     );
+    console.log(userProfiles);
 
     return successResponse({
       res,
@@ -90,6 +95,32 @@ export const getUserProfileController = async (req, res) => {
       message: "Success to fetch user profile",
       key: "user",
     });
+  } catch (error) {
+    console.error("❌ User fetch error:", error.message);
+    return errorResponse({
+      res,
+      statusCode: 500,
+      message: "Failed to fetch profile",
+      error: error.message,
+    });
+  }
+};
+
+export const getLikedGithubController = async (req, res) => {
+  const { phone_number } = req.query;
+
+  try {
+    const doc = await db.collection("users").doc(phone_number).get();
+    if (!doc.exists)
+      return errorResponse({ res, status: 404, message: "User not found" });
+
+    const { favorite_github_users = [] } = doc.data();
+
+    return res.status(200).json({
+      phone_number,
+      favorite_github_ids: favorite_github_users,
+    });
+
   } catch (error) {
     console.error("❌ User fetch error:", error.message);
     return errorResponse({

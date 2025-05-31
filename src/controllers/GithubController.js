@@ -54,17 +54,16 @@ export const searchGithubUserController = async (req, res) => {
         }
       })
     );
-    console.log(enriched);
 
     const { users, pagination } = extractGithubData(
-      enriched,
+      searchRes.data,
       Number(page),
       Number(per_page)
     );
     return successResponse({
       res,
       statusCode: 200,
-      payload: users,
+      payload: enriched,
       message: `Success to fetch Github user profiles based on search query`,
       key: "users",
       pagination,
