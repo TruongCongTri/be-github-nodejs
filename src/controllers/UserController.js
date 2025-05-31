@@ -83,7 +83,6 @@ export const getUserProfileController = async (req, res) => {
           .then((result) => result.data)
       )
     );
-    console.log(userProfiles);
 
     return successResponse({
       res,
@@ -106,6 +105,20 @@ export const getUserProfileController = async (req, res) => {
   }
 };
 
+
+/**
+ * Retrieve liked GitHub ids.
+ *
+ * @async
+ * @function getUserProfileController
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters
+ * @param {string} req.query.phone_number - User's phone number
+ * @param {Object} res - Express response object
+ *
+ * @returns {Promise<Object>} JSON response liked GitHub ids
+ */
 export const getLikedGithubController = async (req, res) => {
   const { phone_number } = req.query;
 
