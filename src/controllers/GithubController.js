@@ -50,7 +50,12 @@ export const searchGithubUserController = async (req, res) => {
           return data;
         } catch (err) {
           console.error(`❌ Failed to fetch details for ${user.login}`);
-          return null;
+          return errorResponse({
+            res,
+            statusCode: 403,
+            message: "GitHub rate limit",
+            error: err.message,
+          });
         }
       })
     );

@@ -81,6 +81,14 @@ export const getUserProfileController = async (req, res) => {
             },
           })
           .then((result) => result.data)
+          .error(() => {
+            return errorResponse({
+              res,
+              statusCode: 403,
+              message: "GitHub rate limit",
+              error: err.message,
+            });
+          })
       )
     );
 
@@ -104,7 +112,6 @@ export const getUserProfileController = async (req, res) => {
     });
   }
 };
-
 
 /**
  * Retrieve liked GitHub ids.
@@ -133,7 +140,6 @@ export const getLikedGithubController = async (req, res) => {
       phone_number,
       favorite_github_ids: favorite_github_users,
     });
-
   } catch (error) {
     console.error("❌ User fetch error:", error.message);
     return errorResponse({
