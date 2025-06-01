@@ -73,23 +73,27 @@ export const getUserProfileController = async (req, res) => {
 
     // Fetch full profile for each GitHub user ID
     const userProfiles = await Promise.all(
-      favorite_github_users.map(async (id) =>
-        axios
-          .get(`${process.env.NEXT_PUBLIC_GITHUB_USER}/${id}`, {
-            headers: {
-              Authorization: `token ${process.env.GITHUB_TOKEN}`, // use token to avoid rate limit
-            },
-          })
-          .then((result) => result.data)
-          .error(() => {
-            return errorResponse({
-              res,
-              statusCode: 403,
-              message: "GitHub rate limit",
-              error: err.message,
-            });
-          })
-      )
+      favorite_github_users.map(async (id) => {
+        try {
+          const { data } = await axios.get(
+            `${process.env.NEXT_PUBLIC_GITHUB_USER}/${id}`,
+            {
+              headers: {
+                Authorization: `token ${process.env.GITHUB_TOKEN}`, // use token to avoid rate limit
+              },
+            }
+          );
+          return data;
+        } catch (error) {
+          console.error(`❌ Failed to fetch details for ${id}`);
+          return errorResponse({
+            res,
+            statusCode: 403,
+            message: "GitHub rate limit",
+            error: err.message,
+          });
+        }
+      })
     );
 
     return successResponse({
