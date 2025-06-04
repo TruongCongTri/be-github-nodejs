@@ -42,6 +42,7 @@ export const searchGithubUserController = async (req, res) => {
   }
 
   try {
+    
     const searchRes = await axios.get(
       process.env.NEXT_PUBLIC_GITHUB_SEARCH_USER,
       {

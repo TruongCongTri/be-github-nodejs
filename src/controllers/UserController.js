@@ -89,7 +89,6 @@ export const likeGitHubUserController = async (req, res) => {
  */
 export const getUserProfileController = async (req, res) => {
   const { phone_number } = req.query;
-  console.log(phone_number);
 
   if (!phone_number || typeof phone_number !== "string") {
     return errorResponse({
