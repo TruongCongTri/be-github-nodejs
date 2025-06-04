@@ -22,7 +22,8 @@ import { EXPIRED_TIME } from "../constant/enum.js";
  */
 export const createAccessCodeController = async (req, res) => {
   const { phone_number } = req.body;
-  const accessCode = generateAccessCode();
+  // const accessCode = generateAccessCode();
+  const accessCode = String(generateAccessCode()).padStart(6, "0");
   const message = `Your access code is: ${accessCode}. Only valid within ${
     EXPIRED_TIME / (6 * 1000)
   } minutes`;

@@ -1,9 +1,18 @@
+import axios from "axios";
+import "dotenv/config";
 import {
   successResponse,
   errorResponse,
 } from "../helpers/responses/response.js";
 import { extractGithubData } from "../utils/extractGithubData.js";
-import axios from "axios";
+
+import { fetchGithubUserByLogin } from "../helpers/github/fetchGithubUserByLogin.js";
+
+//
+import pLimit from "p-limit";
+const limit = pLimit(5); // limit 5 concurrent GitHub requests
+//
+import { db } from "../services/firebase.js";
 
 /**
  * Search GitHub users by keyword with pagination.
@@ -23,63 +32,81 @@ import axios from "axios";
 export const searchGithubUserController = async (req, res) => {
   const { q, page, per_page } = req.query;
 
+  if (!q || typeof q !== "string") {
+    return errorResponse({
+      res,
+      statusCode: 422,
+      message: "Invalid query parameter: 'q' is required",
+      error: "Missing or invalid search term",
+    });
+  }
+
   try {
     const searchRes = await axios.get(
       process.env.NEXT_PUBLIC_GITHUB_SEARCH_USER,
       {
         params: { q, page, per_page },
         headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`, // use token to avoid rate limit
+          Authorization: `token ${process.env.GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json",
         },
       }
     );
 
-    const items = searchRes.data.items;
-    const enriched = await Promise.all(
-      items.map(async (user) => {
-        try {
-          const { data } = await axios.get(
-            `${process.env.NEXT_PUBLIC_GITHUB_USERS}/${user.login}`,
-            {
-              headers: {
-                Authorization: `token ${process.env.GITHUB_TOKEN}`,
-              },
-            }
-          );
+    const rawUsers = searchRes.data.items;
 
-          return data;
-        } catch (err) {
-          console.error(`❌ Failed to fetch details for ${user.login}`);
-          return errorResponse({
-            res,
-            statusCode: 403,
-            message: "GitHub rate limit",
-            error: err.message,
-          });
-        }
-      })
+    const enrichedUsers = await Promise.all(
+      rawUsers.map((user) =>
+        limit(async () => {
+          const fullData = await fetchGithubUserByLogin(user.login);
+
+          // Cache into central collection `github_users` by GitHub ID
+          if (fullData?.id) {
+            await db
+              .collection("github_users")
+              .doc(`${fullData.id}`)
+              .set(fullData, { merge: true });
+          }
+
+          return fullData;
+        })
+      )
     );
+    // const enrichedUsers = await Promise.all(
+    //   rawUsers.map(async (user) => {
+    //     const fullData = await fetchGithubUserByLogin(user.login);
+    //     return fullData;
+    //   })
+    // );
 
-    const { users, pagination } = extractGithubData(
+    const { pagination } = extractGithubData(
       searchRes.data,
       Number(page),
       Number(per_page)
     );
+
     return successResponse({
       res,
       statusCode: 200,
-      payload: enriched,
+      payload: enrichedUsers,
       message: `Success to fetch Github user profiles based on search query`,
       key: "users",
       pagination,
     });
   } catch (error) {
-    console.error("❌ GitHub search error:", error.message);
+    const statusCode = error.response?.status || 500;
+    const message =
+      statusCode === 403
+        ? "GitHub API rate limit exceeded"
+        : "GitHub search failed";
+
+    console.error(`❌ GitHub error (${statusCode}):`, error.message);
+
     return errorResponse({
       res,
-      statusCode: 500,
-      message: "GitHub search failed",
-      error: error.message,
+      statusCode,
+      message,
+      error: error.response?.data || error.message,
     });
   }
 };
@@ -112,7 +139,7 @@ export const findGitHubUserProfileController = async (req, res) => {
       key: "user",
     });
   } catch (error) {
-    console.error("❌ GitHub user fetch error:", err.message);
+    console.error("❌ GitHub user fetch error:", error.message);
     return errorResponse({
       res,
       statusCode: 500,
