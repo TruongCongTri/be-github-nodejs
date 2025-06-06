@@ -1,5 +1,3 @@
-import axios from "axios";
-import "dotenv/config";
 import {
   successResponse,
   errorResponse,
@@ -7,12 +5,11 @@ import {
 import { extractGithubData } from "../utils/extractGithubData.js";
 
 import { fetchGithubUserByLogin } from "../helpers/github/fetchGithubUserByLogin.js";
+import { searchGithubUsers } from "../helpers/github/searchGithubUsers.js";
 
 //
 import pLimit from "p-limit";
 const limit = pLimit(5); // limit 5 concurrent GitHub requests
-//
-import { db } from "../services/firebase.js";
 
 /**
  * Search GitHub users by keyword with pagination.
@@ -32,27 +29,17 @@ import { db } from "../services/firebase.js";
 export const searchGithubUserController = async (req, res) => {
   const { q, page, per_page } = req.query;
 
-  if (!q || typeof q !== "string") {
-    return errorResponse({
-      res,
-      statusCode: 422,
-      message: "Invalid query parameter: 'q' is required",
-      error: "Missing or invalid search term",
-    });
-  }
+  // if (!q || typeof q !== "string") {
+  //   return errorResponse({
+  //     res,
+  //     statusCode: 422,
+  //     message: "Invalid query parameter: 'q' is required",
+  //     error: "Missing or invalid search term",
+  //   });
+  // }
 
   try {
-    
-    const searchRes = await axios.get(
-      process.env.NEXT_PUBLIC_GITHUB_SEARCH_USER,
-      {
-        params: { q, page, per_page },
-        headers: {
-          Authorization: `token ${process.env.GITHUB_TOKEN}`,
-          Accept: "application/vnd.github.v3+json",
-        },
-      }
-    );
+    const searchRes = await searchGithubUsers(q, page, per_page);
 
     const rawUsers = searchRes.data.items;
 
@@ -60,25 +47,10 @@ export const searchGithubUserController = async (req, res) => {
       rawUsers.map((user) =>
         limit(async () => {
           const fullData = await fetchGithubUserByLogin(user.login);
-
-          // Cache into central collection `github_users` by GitHub ID
-          if (fullData?.id) {
-            await db
-              .collection("github_users")
-              .doc(`${fullData.id}`)
-              .set(fullData, { merge: true });
-          }
-
           return fullData;
         })
       )
     );
-    // const enrichedUsers = await Promise.all(
-    //   rawUsers.map(async (user) => {
-    //     const fullData = await fetchGithubUserByLogin(user.login);
-    //     return fullData;
-    //   })
-    // );
 
     const { pagination } = extractGithubData(
       searchRes.data,
@@ -129,13 +101,15 @@ export const findGitHubUserProfileController = async (req, res) => {
   const { github_user_id } = req.query;
 
   try {
-    const { data } = await axios.get(
-      `${process.env.NEXT_PUBLIC_GITHUB_USER}/${github_user_id}`
-    );
+    // const { data } = await axios.get(
+    //   `${process.env.NEXT_PUBLIC_GITHUB_USER}/${github_user_id}`
+    // );
+
+    const fullData = await fetchGithubUserByLogin(github_user_id);
     return successResponse({
       res,
       statusCode: 200,
-      payload: data,
+      payload: fullData,
       message: "Success to fetch github user profile",
       key: "user",
     });

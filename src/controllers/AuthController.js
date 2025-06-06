@@ -6,6 +6,10 @@ import {
   errorResponse,
 } from "../helpers/responses/response.js";
 import { EXPIRED_TIME } from "../constant/enum.js";
+import { createAccessMessage } from "../helpers/auth/createAccessMessage.js";
+import { saveAccessCode } from "../helpers/auth/saveAccessCode.js";
+import { getUserAccessCodeData } from "../helpers/auth/getUserAccessCodeData.js";
+import { clearUserAccessCode } from "../helpers/auth/clearUserAccessCode.js";
 
 /**
  * Create a new 6-digit access code, send it via SMS, and store it in Firebase.
@@ -22,30 +26,21 @@ import { EXPIRED_TIME } from "../constant/enum.js";
  */
 export const createAccessCodeController = async (req, res) => {
   const { phone_number } = req.body;
-  // const accessCode = generateAccessCode();
-  const accessCode = String(generateAccessCode()).padStart(6, "0");
-  const message = `Your access code is: ${accessCode}. Only valid within ${
-    EXPIRED_TIME / (6 * 1000)
-  } minutes`;
-  const expiresAt = Date.now() + EXPIRED_TIME;
 
+  const accessCode = String(generateAccessCode()).padStart(6, "0");
+  const expiresAt = Date.now() + EXPIRED_TIME;
+  const message = createAccessMessage(accessCode, `${EXPIRED_TIME / (6 * 1000)}`);
+  
   try {
     await sendSMS(phone_number, message);
 
     // Only save to Firestore if SMS succeeded
-    await db
-      .collection("users")
-      .doc(phone_number)
-      .set({ accessCode, expiresAt }, { merge: true });
+    await saveAccessCode(phone_number, accessCode, expiresAt);
 
     console.log(
       `🔐 DEV ONLY: Access Code for ${phone_number} is ${accessCode}`
     );
-    console.log(
-      `🔐 DEV ONLY: Your access code is: ${accessCode}. Only valid within ${
-        EXPIRED_TIME / (60 * 1000)
-      } minutes`
-    );
+    console.log(`🔐 DEV ONLY: SMS - ${message}`);
 
     return successResponse({
       res,
@@ -81,9 +76,10 @@ export const validateAccessCodeController = async (req, res) => {
   const { phone_number, access_code } = req.body;
 
   try {
-    const userDoc = await db.collection("users").doc(phone_number).get();
+    const userData = await getUserAccessCodeData(phone_number);
 
-    if (!userDoc.exists) {
+    if (!userData) {
+      console.log("Phone number not found");
       return errorResponse({
         res,
         statusCode: 404,
@@ -91,9 +87,8 @@ export const validateAccessCodeController = async (req, res) => {
       });
     }
 
-    const userData = userDoc.data();
-
     if (userData.accessCode !== access_code) {
+      console.log("Invalid access code");
       return errorResponse({
         res,
         statusCode: 401,
@@ -102,6 +97,7 @@ export const validateAccessCodeController = async (req, res) => {
     }
 
     if (Date.now() > userData.expiresAt) {
+      console.log("Access code expired");
       return errorResponse({
         res,
         statusCode: 401,
@@ -109,10 +105,7 @@ export const validateAccessCodeController = async (req, res) => {
       });
     }
     // Clear access code once validated
-    await db
-      .collection("users")
-      .doc(phone_number)
-      .update({ accessCode: "", expiresAt: "" });
+    await clearUserAccessCode(phone_number);
 
     return successResponse({ res, statusCode: 200, message: "Code validated" });
   } catch (error) {

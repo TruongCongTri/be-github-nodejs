@@ -13,7 +13,7 @@ import {
 import {
   getUserProfileController,
   likeGitHubUserController,
-  getLikedGithubController
+  // getLikedGithubController
 } from "../controllers/UserController.js";
 
 const router = express.Router();
@@ -45,9 +45,9 @@ router.post(
  * @desc Retrieve user profile and liked GitHub profiles
  * @access Public
  */
-router.get(
-  "/profile/liked-github",
-  validateSchema(getUserProfileSchema, "query"),
-  getLikedGithubController
-);
+// router.get(
+//   "/profile/liked-github",
+//   validateSchema(getUserProfileSchema, "query"),
+//   getLikedGithubController
+// );
 export default router;

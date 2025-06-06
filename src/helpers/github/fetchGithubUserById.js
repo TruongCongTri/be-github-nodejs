@@ -11,12 +11,19 @@ import { githubUserCache } from "../../libs/cache/githubUserCache.js";
  * @returns {Promise<Object|null>} GitHub user profile data or null if failed
  */
 export const fetchGithubUserById = async (id) => {
-  // in-memory cache
+  // Check in-memory cache
   const cached = githubUserCache.get(id);
   if (cached) return cached;
 
-  // Firestore fallback
+  // Check Firestore cache
   const cacheDocRef = db.collection("github_users").doc(`${id}`);
+  const cacheDoc = await cacheDocRef.get();
+  if (cacheDoc.exists) {
+    const firestoreData = cacheDoc.data();
+    githubUserCache.set(id, firestoreData);
+    return firestoreData;
+  }
+
   try {
     // GitHub API request
     const { data } = await axios.get(
@@ -29,12 +36,14 @@ export const fetchGithubUserById = async (id) => {
       }
     );
 
-    // Set all caches
+    // Update all caches
     githubUserCache.set(id, data); // Update memory cache
     await cacheDocRef.set(data, { merge: true }); // Save to Firestore
     return data;
   } catch (error) {
     const statusCode = error.response?.status || 500;
+
+    // GitHub Rate Limit fallback (re-check)
     if (statusCode === 403) {
       console.warn(
         `⚠️ GitHub rate limit hit. Trying Firestore fallback for ID ${id}`
@@ -46,9 +55,8 @@ export const fetchGithubUserById = async (id) => {
         .get();
       if (fallbackDoc.exists) {
         const fallbackData = fallbackDoc.data();
-        // Update in-memory & Redis for faster next access
+        // Update in-memory cache
         githubUserCache.set(id, fallbackData);
-        await redis.set(cacheKey, JSON.stringify(fallbackData), "EX", 3600);
         return fallbackData;
       }
     }
